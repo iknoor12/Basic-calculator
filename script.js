@@ -1,7 +1,7 @@
 const body = document.querySelector('body');
 
 const style = document.createElement('style');
-style.textContent=`
+style.textContent = `
     body {
         margin: 0;
         padding: 0;
@@ -13,15 +13,17 @@ style.textContent=`
         border: 1px solid black;
         border-radius: 2em;
         display: grid;
-        gap: 2em;
+        justify-items: center;
+        gap: 1.2em;
         margin-top: 2em;
         padding: 3em 4em 0em 4em;
         background-color: #cd5656a1;
-        box-shadow: 8px 8px 20px 4px rgba(135, 133, 133, 0.88);    // Horizontal(3px to right), Vertical(3px downward), Blur, Spread radius
+        box-shadow: 8px 8px 20px 4px rgba(135, 133, 133, 0.88);  // Horizontal(3px to right), Vertical(3px downward), Blur, Spread radius
     }
 
     #display {
         padding: 1rem 1rem;
+        width: 95%;
         font-size: 1.5em;
         text-decoration: none;
         border-radius: 0.5rem;
@@ -32,26 +34,40 @@ style.textContent=`
         grid-template-columns: repeat(4, 80px);          
         grid-template-rows: repeat(4, 90px);           
         gap: 18px;
-        padding: 2em 1em;
-        // background-color: #EAEBD0;
+        padding: 1em 1em;
+        margin-bottom: 2em;
     }
 
     .buttons button {
         font-size: 2em;
         background-color: #EAEBD0;
-        box-shadow: 8px 8px 1px 1px rgba(135, 133, 133, 0.88);
+        box-shadow: 8px 8px 1px 2px rgba(135, 133, 133, 0.81);
         border: none;
         border-radius: 0.5rem;
+    }
+
+    .history {
+        background-color: #EAEBD0;
+        padding: 2em 1em;
+        margin-bottom: 2em;
+        text-align: center;
+        width: 90%;
+        font-size: 1.5em;
+    }
+
+    .hisbtn {
+        font-size: 1.1em;
+        padding: 0.5rem 0.8rem;
+        width: 60%;
     }
 `;
 document.head.appendChild(style);
 
 
 
-//   MAIN  BODY
-
 const mainHeading = document.createElement('h1');
-mainHeading.textContent = 'A Basic Calaculator';
+mainHeading.textContent = 'A Basic Calculator';
+
 
 const mainDiv = document.createElement('div');
 mainDiv.classList.add('calculator');
@@ -61,11 +77,10 @@ body.append(mainHeading, mainDiv);
 const inputSpace = document.createElement('input');
 inputSpace.setAttribute('placeholder', 'Type numbers..');
 inputSpace.setAttribute('type', 'text');
-inputSpace.id='display';
+inputSpace.id = 'display';
 
 
 
-//   BUTTONS - DIV 
 const minDiv = document.createElement('div');
 minDiv.classList.add('buttons');
 
@@ -110,9 +125,47 @@ minDiv.append(btn1,btn2,btn3,btnSubt,btn4,btn5,btn6,btnMult,btn7,btn8,btn9,btnSl
 
 
 
+// History Section
+let historySpace = document.createElement('div');
+historySpace.classList.add('history');
+historySpace.style.display = 'none';
+mainDiv.append(historySpace);
 
 
-//  Functionality 
+let historyBtn = document.createElement('button');
+historyBtn.classList.add('hisbtn');
+historyBtn.textContent = "📜 Show History";
+mainDiv.insertBefore(historyBtn, minDiv);
+
+
+let historyList = JSON.parse(localStorage.getItem('calculationHistory')) || [];
+
+function renderHistory() {
+    historySpace.innerHTML = '<h3>History: </h3>';
+
+    historyList.forEach(item => {
+        let historyItem = document.createElement('div');
+        historyItem.classList.add('history-item');
+        historyItem.textContent = item;
+        historySpace.appendChild(historyItem);
+    });
+
+}
+
+
+historyBtn.addEventListener('click', () => {
+    if (historySpace.style.display === 'none') {
+        historySpace.style.display = 'block';
+        minDiv.style.display = 'none';
+        historyBtn.textContent = "🔙 Back to Calculator";
+    } else {
+        historySpace.style.display = 'none';
+        minDiv.style.display = 'grid';
+        historyBtn.textContent = "📜 Show History";
+    }
+});
+
+
 
 const display = document.getElementById('display');
 
@@ -120,17 +173,27 @@ const buttons = document.querySelectorAll('.buttons button');
 
 const operators = ['+', '-', '*', '/'];
 
+
 buttons.forEach((button) => {
     button.addEventListener("click", () => {
         const value = button.textContent;
 
         if (value === "=") {
             try {
-                display.value = eval(display.value); 
+                let expression = display.value;
+                if (expression.trim() !== "") {
+                    let result = eval(expression);
+                    display.value = result;
+
+                    let entry = `${expression} = ${result}`;
+                    historyList.push(entry);
+                    localStorage.setItem('calculationHistory', JSON.stringify(historyList));
+                    renderHistory();
+                }
             } catch {
                 display.value = "Error";
             }
-            return; // stop further execution
+            return;
         }
 
         if (value === "C") {
@@ -142,18 +205,15 @@ buttons.forEach((button) => {
             display.value = "";
         }
 
-        // Prevent starting with operator
-        // if (display.value === "" && operators.includes(value)) {
-        //     return;
-        // }
-
         // Prevent double operators
         const lastChar = display.value.slice(-1);
         if (operators.includes(lastChar) && operators.includes(value)) {
             return;
         }
 
-        // Finally, append the value
         display.value += value;
     });
 });
+
+// Load previous history
+renderHistory();
